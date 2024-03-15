@@ -22,7 +22,7 @@ Optimizing a NeRF takes between a few hours and a day or two (depending on resol
 
 ## NeRF Uncertainty Deterministic Neural Network
 
-<!-- TO BE WRITTEN -->
+This NeRF Uncertainty Deterministic Neural Network (NN) estimates the uncertainty of the model’s prediction, i.e., the output estimated uncertainty by the model represents the capability and confidence of the model to synthesize the scene accurately. It outputs an uncertainty prediction based on a single forward pass within a deterministic network. The deterministic network, represented as a multilayer perceptron (MLP) estimating color $\boldsymbol{c}$, volume density $\sigma$, and an uncertainty $\delta$. We adopt the uncertainty estimation method from Recursive Neural Radiance ([Recursive-NeRF](https://ieeexplore.ieee.org/document/9909994)).
 
 Following figure illustrates the NeRF Uncertainty Deterministic NN model pipeline.
 ![NeRF Uncertainty Deterministic NN pipeline](https://github.com/CTW121/NeRF-Uncertainty-Deterministic-NN/blob/master/images/Uncertainty_Neural_Network_pipeline.png)
