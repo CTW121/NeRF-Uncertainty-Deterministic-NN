@@ -27,7 +27,7 @@ This NeRF Uncertainty Deterministic Neural Network (NN) estimates the uncertaint
 Following figure illustrates the NeRF Uncertainty Deterministic NN model pipeline.
 ![NeRF Uncertainty Deterministic NN pipeline](https://github.com/CTW121/NeRF-Uncertainty-Deterministic-NN/blob/master/images/Uncertainty_Neural_Network_pipeline.png)
 
-fter training the model, the uncertainty estimated by the model can be visualized using our uncertainty visualization tool, see section [Visualization uncertainty in NeRF Uncertainty Deterministic NN](##Visualization-uncertainty-in-NeRF-Uncertainty-Deterministic-NN) for more information. 
+After training the model, the uncertainty estimated by the model can be visualized using our uncertainty visualization tool, see section [Visualization uncertainty in NeRF Uncertainty Deterministic NN](##Visualization-uncertainty-in-NeRF-Uncertainty-Deterministic-NN) for more information. 
 
 ## How to train NeRF Uncertainty Deterministic Neural Network model
 
