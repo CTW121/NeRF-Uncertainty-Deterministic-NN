@@ -24,6 +24,11 @@ Optimizing a NeRF takes between a few hours and a day or two (depending on resol
 
 <!-- TO BE WRITTEN -->
 
+Following figure illustrates the NeRF Uncertainty Deterministic NN model pipeline.
+![NeRF Uncertainty Deterministic NN pipeline](https://github.com/CTW121/NeRF-Uncertainty-Deterministic-NN/blob/master/images/Uncertainty_Neural_Network_pipeline.png)
+
+fter training the model, the uncertainty estimated by the model can be visualized using our uncertainty visualization tool, see section [Visualization uncertainty in NeRF Uncertainty Deterministic NN](##Visualization-uncertainty-in-NeRF-Uncertainty-Deterministic-NN) for more information. 
+
 ## How to train NeRF Uncertainty Deterministic Neural Network model
 
 ### Run training
@@ -44,8 +49,8 @@ python train_nerf.py --config config/chair.yml --load-checkpoint path/to/checkpo
 
 Refer to [nerf-pytorch](https://github.com/krrish94/nerf-pytorch) for the detail of implementation and model training.
 
-## Visualization uncertainty in NeRF Uncertainty Ensemble
+## Visualization uncertainty in NeRF Uncertainty Deterministic NN
 
-The uncertainty estimated by the NeRF Uncertainty Ensemble model can be visualized using uncertainty visualization tool [NeRFDeltaView Deterministic NN](https://github.com/CTW121/NeRFDeltaView-Deterministic-NN).
+The uncertainty estimated by the NeRF Uncertainty Deterministic NN model can be visualized using uncertainty visualization tool [NeRFDeltaView Deterministic NN](https://github.com/CTW121/NeRFDeltaView-Deterministic-NN).
 
 Uncertainty visualization provides users with an in-depth understanding of the data for analysis and to perform confident and informed decision-making. The main purpose of our tool is to highlight the significance of interactive visualization in enabling users to explore the estimated uncertainty in synthesized scenes, identify model limitations, and aid in understanding NeRF model uncertainty.
