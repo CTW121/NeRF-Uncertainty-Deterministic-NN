@@ -49,7 +49,33 @@ class UncertaintyLoss(torch.nn.Module):
         alpha2: float = 0.01,
     ) -> torch.Tensor:
         """
-        Forward pass
+        Forward pass.
+        
+        Parameters:
+        -----------
+        rgb_coarse_predicted : torch.Tensor
+            Predicted RGB values by the coarse model.
+        rgb_fine_predicted : torch.Tensor
+            Predicted RGB values by the fine model.
+        target_ray_values : torch.Tensor
+            Target RGB values for the rays.
+        delta_coarse : torch.Tensor
+            Uncertainty estimates for the coarse model.
+        delta_fine : torch.Tensor
+            Uncertainty estimates for the fine model.
+        num_sample_coarse : int
+            Number of sample points on a ray for the coarse model.
+        num_sample_fine : int
+            Number of sample points on a ray for the fine model.
+        alpha1 : float, optional
+            Weight for the squared error loss, by default 0.1.
+        alpha2 : float, optional
+            Weight for the regularization loss, by default 0.01.
+        
+        Returns:
+        --------
+        torch.Tensor
+            Uncertainty loss for the coarse model and the fine model (if available).
         """
 
         """
@@ -101,87 +127,7 @@ class UncertaintyLoss(torch.nn.Module):
             L_unct_fine = alpha1 * Lse_fine + alpha2 * L0_fine
         
         return [L_unct_coarse, L_unct_fine]
-
-def transferFunction(delta: torch.Tensor) -> torch.Tensor:
-
-    # r = 1.0*torch.exp( -(delta - 0.9)**2/1.0 ) +  0.1*torch.exp( -(delta - 0.2)**2/0.1 ) +  0.1*torch.exp( -(delta - 0.001)**2/0.01 )
-    # g = 1.0*torch.exp( -(delta - 0.9)**2/1.0 ) +  1.0*torch.exp( -(delta - 0.2)**2/0.1 ) +  0.1*torch.exp( -(delta - 0.001)**2/0.01 )
-    # b = 0.1*torch.exp( -(delta - 0.9)**2/1.0 ) +  0.1*torch.exp( -(delta - 0.2)**2/0.1 ) +  1.0*torch.exp( -(delta - 0.001)**2/0.01 )
-    # a = 1.0*torch.exp( -(delta - 0.9)**2/1.0 ) +  0.01*torch.exp( -(delta - 0.2)**2/0.1 ) + 0.001*torch.exp( -(delta - 0.001)**2/0.01 )
-
-    # a = 0.95*delta + 0.0
-
-    max = torch.max(delta)
-    min = torch.min(delta)
-    a = (delta - min)/(max - min)
-
-    return a
-
-def visualize_uncertainty(rgb_fine: torch.Tensor, delta_coarse: torch.Tensor, delta_fine: torch.Tensor, radiance_field: torch.Tensor, device):
-    """
-    Generate the uncertainty visualization images
-    """
-    #print("rgb_fine.shape: ", rgb_fine.shape)   # torch.Size([400, 400, 3])
-    #print("delta_coarse.shape: ", delta_coarse.shape) # torch.Size([160000, 128])
-    #print("delta_fine.shape: ", delta_fine.shape)   # torch.Size([160000, 128])
     
-    #n_delta = np.sqrt(delta_fine.shape[0]).astype(int)
-    x_delta = rgb_fine.shape[0]
-    y_delta = rgb_fine.shape[1]
-    d_delta = delta_fine.shape[-1]
-    delta_fine = delta_fine.view(x_delta, y_delta, d_delta)
-    #print("delta_fine.shape: ", delta_fine.shape)   # torch.Size([400, 400, 128])
-    #print("type(delta_fine): ", type(delta_fine))
-
-    #print("radiance_field.shape: ", radiance_field.shape)
-    #n_radianceField = np.sqrt(radiance_field.shape[0]).astype(int)
-    x_radianceField = rgb_fine.shape[0]
-    y_radianceField = rgb_fine.shape[1]
-    d_radianceField = radiance_field.shape[1]
-    rgb_radianceField = radiance_field.view(x_radianceField, y_radianceField, d_radianceField, -1)
-    #print("rgb_radianceField.shape: ", rgb_radianceField.shape)
-
-    #print("delta_fine (max): {:.4f}".format(torch.max(delta_fine).item()))
-    #print("delta_fine (min): {:.4f}".format(torch.min(delta_fine).item()))
-
-    # delta_max = torch.max(delta_fine)
-    # delta_min = torch.min(delta_fine)
-    # delta_fine_normal = (delta_fine - delta_min) / (delta_max - delta_min)
-
-    # https://medium.com/swlh/create-your-own-volume-rendering-with-python-655ca839b097
-    # https://github.com/pmocz/volumerender-python
-    # https://github.com/pmocz/volumerender-python/blob/main/volumerender.py
-
-    a = transferFunction(delta_fine)
-    # print("torch.max(a): ", torch.max(a))
-    # print("torch.min(a): ", torch.min(a))
-
-    #a = torch.clip(a, 0.0, 1.0)
-
-    # print("torch.max(a) After clipping: ", torch.max(a))   # tensor(1., device='cuda:0')
-    # print("torch.min(a) After clipping: ", torch.min(a))   # tensor(0.4609, device='cuda:0')
-    #print("a.shape: ", a.shape) # torch.Size([400, 400, 128])
-
-    img_alpha = torch.Tensor(np.zeros((rgb_radianceField.shape[0], rgb_radianceField.shape[1],3))).to(device)
-    # img_alpha = torch.Tensor(np.zeros((a.shape[0], a.shape[1]))).to(device)
-    depth_alpha = a.shape[-1]
-
-    for i in range(0, depth_alpha, 1):
-        #img_alpha = img_alpha + (1 - img_alpha) * a[:,:,i]
-        img_alpha[:,:,0] = a[:,:,i]*rgb_radianceField[:,:,i,0] + (1-a[:,:,i])*img_alpha[:,:,0]
-        img_alpha[:,:,1] = a[:,:,i]*rgb_radianceField[:,:,i,1] + (1-a[:,:,i])*img_alpha[:,:,1]
-        img_alpha[:,:,2] = a[:,:,i]*rgb_radianceField[:,:,i,2] + (1-a[:,:,i])*img_alpha[:,:,2]
-    
-    #print("img_alpha.shape: ", img_alpha.shape)
-    #print("torch.max(img_alpha): ", torch.max(img_alpha))
-    #print("torch.min(img_alpha): ", torch.min(img_alpha))
-
-    img_alpha = torch.clip(img_alpha, 0.20, 1.00)
-
-    #print("torch.max(img_alpha) After clipping: ", torch.max(img_alpha))
-    #print("torch.min(img_alpha) After clipping: ", torch.min(img_alpha))
-
-    return img_alpha
 
 def main():
 
@@ -261,7 +207,6 @@ def main():
             images = torch.from_numpy(images)
             poses = torch.from_numpy(poses)
 
-            # print("images.shape: ", images.shape)   # torch.Size([20, 378, 504, 3])
 
     # Seed experiment for repeatability
     seed = cfg.experiment.randomseed
@@ -275,15 +220,8 @@ def main():
         device = "cpu"
     print(device)
 
-    #print("image: ", images[i_test[0]].size())
-    # testimg_ = images[i_test[168]].numpy()
-    #testimg_ = images[i_test[16]].numpy()
     testimg_ = images[i_test[cfg.nerf.validation.img]].numpy()
     testimg = testimg_[:,:,:3]
-    # print("type(testimg): ", type(testimg))
-    # print("testimg.ndim: ", testimg.ndim)
-    # print("testimg.shape: ", testimg.shape)
-    # print("testimg.dtype: ", testimg.dtype)
     matplotlib.image.imsave('testimg_{}.png'.format(str(cfg.experiment.id)), testimg)
 
     encode_position_fn = get_embedding_function(
@@ -422,10 +360,7 @@ def main():
             img_target = images[img_idx].to(device)
             pose_target = poses[img_idx, :3, :4].to(device)
             ray_origins, ray_directions = get_ray_bundle(H, W, focal, pose_target)
-            # print("X min: {:.3f}; X max: {:.3f} | Y min: {:.3f}; Y max: {:.3f} | Z min: {:.3f}; Z max: {:.3f}"
-            #       .format(torch.min(ray_origins[:,:,0]), torch.max(ray_origins[:,:,0]),
-            #               torch.min(ray_origins[:,:,1]), torch.max(ray_origins[:,:,1]),
-            #               torch.min(ray_origins[:,:,2]), torch.max(ray_origins[:,:,2])))
+            
             coords = torch.stack(
                 meshgrid_xy(torch.arange(H).to(device), torch.arange(W).to(device)),
                 dim=-1,
@@ -489,7 +424,6 @@ def main():
         beta1 = cfg.nerf.beta1
         beta2 = cfg.nerf.beta2
 
-        # loss = coarse_loss + (fine_loss if fine_loss is not None else 0.0) + loss_uncertainty
         loss = beta1 * (coarse_loss + (fine_loss if fine_loss is not None else 0.0)) + beta2 * loss_uncertainty
         loss.backward()
         psnr = mse2psnr(loss.item())
@@ -603,7 +537,6 @@ def main():
                 beta1 = cfg.nerf.beta1
                 beta2 = cfg.nerf.beta2
 
-                # loss = coarse_loss + fine_loss + loss_uncertainty
                 loss = beta1 * (coarse_loss + fine_loss) + beta2 * loss_uncertainty
                 #loss = coarse_loss + fine_loss
                 psnr = mse2psnr(loss.item())
@@ -664,8 +597,6 @@ def main():
             with torch.no_grad():
                 rgb_coarse, rgb_fine = None, None
                 #test_ray_values = None
-                #img_idx = i_test[168]
-                #img_idx = i_test[16]
                 img_idx = i_test[cfg.nerf.validation.img]
                 img_test = images[img_idx].to(device)
                 pose_test = poses[img_idx, :3, :4].to(device)
@@ -687,40 +618,10 @@ def main():
                     encode_direction_fn=encode_direction_fn,
                 )
 
-                #print("radiance_field.shape: ", radiance_field.shape)
-                #print("rgb_fine.shape: ", rgb_fine.shape)   # torch.Size([400, 400, 3])
-                #print("delta_fine.shape: ", delta_fine.shape)   # torch.Size([160000, 128])
-                #print("testimg.shape: ", testimg.shape) # (400, 400, 3)
-                #print("torch.min(delta_fine): ", torch.min(delta_fine))
-                #print("torch.max(delta_fine): ", torch.max(delta_fine))
-
-                #plt.imshow(rgb_coarse.detach().cpu().numpy())
-                #plt.savefig(os.path.join(logdir, "coarse_" + str(i).zfill(6) + ".png"))
-                #plt.close("all")
-
-                #print("torch.min(rgb_fine): ", torch.min(rgb_fine))
-                #print("torch.max(rgb_fine): ", torch.max(rgb_fine))
-
-                # plt.imshow(rgb_fine.detach().cpu().numpy())
-                # plt.savefig(os.path.join(logdir, "fine_" + str(i).zfill(6) + ".png"))
-                # plt.close("all")
-
-                # savefile = os.path.join(logdir, f"coarse_{i:06d}.png")
-                # imageio.imwrite(
-                #     savefile, cast_to_image(rgb_coarse[..., :3])
-                # )
-
                 savefile = os.path.join(logdir, f"fine_{i:06d}.png")
                 imageio.imwrite(
                     savefile, cast_to_image(rgb_fine[..., :3])
                 )
-
-                # n = rgb_fine.shape[-1]
-                # rgb_fine_std = torch.std(rgb_fine, -1) * n / (n-1)
-                # print("rgb_fine_std.shape: ", rgb_fine_std.shape)
-                # plt.imshow(rgb_fine_std.detach().cpu().numpy())
-                # plt.savefig(os.path.join(logdir, "fine_std_" + str(i).zfill(6) + ".png"))
-                # plt.close("all")
 
                 delta_flatten = delta_fine.view(-1)
                 #print("delta_color_flatten.shape: ", delta_color_flatten.shape)
@@ -730,33 +631,6 @@ def main():
                 plt.ylim(0, 15000000)
                 plt.savefig(os.path.join(logdir, "histogram_delta_" + str(i).zfill(6) + ".png"))
                 plt.close("all")
-
-                alpha = visualize_uncertainty(rgb_fine, delta_coarse, delta_fine, radiance_field, device)
-                # alpha_np = alpha.detach().cpu().numpy()
-                # df = pd.DataFrame(alpha_np)
-                # df.to_csv(os.path.join(logdir, "alpha_fine_" + str(i).zfill(6) + ".csv"), index=False)
-
-                # alpha = torch.unsqueeze(alpha, dim=2)
-                # print("alpha.shape: ", alpha.shape)
-                # rgb_fine_alpha = torch.concatenate((rgb_fine, alpha), axis=-1)
-                # print("rgb_fine_alpha.shape: ", rgb_fine_alpha.shape)
-
-                # plt.imshow(alpha.detach().cpu().numpy())
-                # plt.savefig(os.path.join(logdir, "alpha_fine_" + str(i).zfill(6) + ".png"))
-                # plt.close("all")
-
-                savefile = os.path.join(logdir, f"alpha_fine_{i:06d}.png")
-                imageio.imwrite(
-                    savefile, cast_to_image(alpha[..., :3])
-                )
-
-                # delta_normalize_flatten = delta_normalize.view(-1)
-                # delta_normalize_flatten_arr = delta_normalize_flatten.detach().cpu().numpy()
-                # n, bins, patches = plt.hist(x=delta_normalize_flatten_arr, bins=100, color='#0504aa', alpha=0.7, rwidth=0.85)
-                # plt.xlim(0, 1.0)
-                # plt.ylim(0, 15000000)
-                # plt.savefig(os.path.join(logdir, "histogram_delta_normalize_" + str(i).zfill(6) + ".png"))
-                # plt.close("all")
         
         if i == cfg.experiment.train_iters - 1:
             plt.plot(iternums, psnrs)
