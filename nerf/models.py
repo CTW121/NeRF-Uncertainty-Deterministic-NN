@@ -232,13 +232,8 @@ class FlexibleNeRFModel(torch.nn.Module):
             self.fc_rgb = torch.nn.Linear(hidden_size // 2, 3)
             self.fc_feat = torch.nn.Linear(hidden_size, hidden_size)
 
-            #self.fc_uncertainty_color = torch.nn.Linear(hidden_size // 2, 1)
-            #self.fc_uncertainty_density = torch.nn.Linear(hidden_size, 1)
-
             self.fc_uncertainty = torch.nn.Linear(hidden_size // 2, 1)
-            #self.fc_uncertainty = torch.nn.Linear(4, 1)
         else:
-            # self.fc_out = torch.nn.Linear(hidden_size, 4)
             self.fc_out = torch.nn.Linear(hidden_size, 6)
 
         self.relu = torch.nn.functional.relu
@@ -255,7 +250,6 @@ class FlexibleNeRFModel(torch.nn.Module):
                 i % self.skip_connect_every == 0
                 and i > 0
                 and i != self.num_layers - 1
-                # and i != len(self.linear_layers) - 1
             ):
                 x = torch.cat((x, xyz), dim=-1)
             x = self.relu(self.layers_xyz[i](x))
@@ -272,10 +266,6 @@ class FlexibleNeRFModel(torch.nn.Module):
             for l_delta in self.layers_uncertainty:
                 x_delta = self.relu(l_delta(x))
             delta = self.fc_uncertainty(x_delta)
-            #delta = self.relu(self.fc_uncertainty(x))
-            #delta = self.relu(self.fc_uncertainty(torch.cat((rgb, alpha), dim=1)))
-            #delta = self.sigmoid(self.fc_uncertainty(x))
-            #delta = self.fc_uncertainty(torch.cat((rgb, alpha), dim=1))
 
             return torch.cat((rgb, alpha, delta), dim=-1)
         else:

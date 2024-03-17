@@ -67,14 +67,6 @@ def predict_and_render_radiance(
         z_vals = lower + (upper - lower) * t_rand
     # pts -> (num_rays, N_samples, 3)
     pts = ro[..., None, :] + rd[..., None, :] * z_vals[..., :, None]
-    # print("X min: {:.3f}; X max: {:.3f} | Y min: {:.3f}; Y max: {:.3f} | Z min: {:.3f}; Z max: {:.3f}"
-    #       .format(torch.min(pts[:,:,0]), torch.max(pts[:,:,0]),
-    #               torch.min(pts[:,:,1]), torch.max(pts[:,:,1]),
-    #               torch.min(pts[:,:,2]), torch.max(pts[:,:,2])))
-    # example print output
-    # X min: -3.550;    X max: 3.494    => X range [-4.00, 4.00]
-    # Y min: -3.226;    Y max: 3.456    => Y range [-4.00, 4.00]
-    # Z min: -2.907;    Z max: 2.150    => Z range [-3.00, 3.00] -> [-4.00, 4.00]
 
     radiance_field = run_network(
         model_coarse,
